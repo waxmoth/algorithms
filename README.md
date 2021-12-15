@@ -1,1 +1,3 @@
 # Algorithms
+
+## Some small algorithms
