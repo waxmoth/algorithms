@@ -48,13 +48,13 @@ public class Solution {
 
         try {
             System.out.println(s.solution("MOCKED_WRONG_TIME", "12:14:00"));
-            System.out.println("Failed get exception when the time is not correct");
+            System.out.println("Failed get exception when put a wrong format time");
         } catch (IllegalArgumentException exception) {
         }
 
         try {
             System.out.println(s.solution("14:12:00", "12:14:00"));
-            System.out.println("Failed get exception when the time is not correct");
+            System.out.println("Failed get exception when end time smaller than the start time");
         } catch (IllegalArgumentException exception) {
         }
 
