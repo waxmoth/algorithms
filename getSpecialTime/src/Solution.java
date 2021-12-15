@@ -1,7 +1,7 @@
 /**
  * The clock distinct solution. Get the time with max unique number as 2
  * Example: Time 12:12:00 to 12:13:00, get time: 12:12:11, 12:12:12, 12:12:21, 12:12:22
- * Run: java getSpecilTime/src/Solution.java
+ * Run: java getSpecialTime/src/Solution.java
  */
 public class Solution {
 
