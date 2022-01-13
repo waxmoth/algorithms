@@ -1,18 +1,21 @@
 package main
 
 import (
-	"algorithms/fibonacciNumber/solutions"
+	. "algorithms/fibonacciNumber/solutions"
 	"flag"
 	"fmt"
-	"strconv"
+	"reflect"
+	"runtime"
 	"time"
 )
 
+// The default timeout for each channel
+var timeout = 5
+
 func main() {
-	fibNumber := "20"
-	timeout := "5"
-	flag.StringVar(&fibNumber, "n", fibNumber, "The fib number. Default is 20.")
-	flag.StringVar(&timeout, "t", timeout, "The time out value. Default is 5 seconds.")
+	fibNumber := 20
+	flag.IntVar(&fibNumber, "n", fibNumber, "The fib number.")
+	flag.IntVar(&timeout, "t", timeout, "The timeout settings for each run.")
 
 	flag.Usage = func() {
 		fmt.Printf("Usage: \n")
@@ -21,35 +24,47 @@ func main() {
 	}
 	flag.Parse()
 
-	n, _ := strconv.Atoi(fibNumber)
-	t, _ := strconv.Atoi(timeout)
+	callSolution(FibOne, fibNumber)
+	callSolution(FibTwo, fibNumber)
+	callSolution(FibThree, fibNumber, make(map[int]int))
+}
 
-	fmt.Printf("solutions.%s(%d) -> %d\n", "FibTwo", n, solutions.FibTwo(n))
+func callSolution(solution interface{}, p ...interface{}) {
+	// Get the function from interface
+	handler := reflect.ValueOf(solution)
+	solutionName := runtime.FuncForPC(handler.Pointer()).Name()
+	if handler.Kind() != reflect.Func {
+		panic("The solution." + solutionName + " not support yet")
+	}
 
+	// Get function parameters
+	paramNum := len(p)
+	params := make([]reflect.Value, paramNum)
+	if paramNum > 0 {
+		for k, v := range p {
+			params[k] = reflect.ValueOf(v)
+		}
+	}
+
+	// Async push data into the channel
 	ch := make(chan int)
-	callSolution("FibOne", n, ch, t)
-	// TODO: Why timeout when call this method?
-	callSolution("FibTwo", n, ch, t)
-	callSolution("FibThree", n, ch, t)
+	go func() {
+		values := handler.Call(params)
+		for _, v := range values {
+			ch <- v.Interface().(int)
+		}
+	}()
+
+	// Get data from the channel
+	select {
+	case res := <-ch:
+		fmt.Printf("%s|solutions.%s(%v) -> %d\n", now(), solutionName, params[0], res)
+	case <-time.After(time.Duration(timeout) * time.Second):
+		fmt.Printf("%s|solutions.%s(%v) -> out of time :(\n", now(), solutionName, params[0])
+	}
 	defer close(ch)
 }
 
-func callSolution(solutionName string, n int, ch chan int, timeout int) {
-	go func(name string, n int, ch chan int) {
-		switch name {
-		case "FibOne":
-			ch <- solutions.FibOne(n)
-		case "FinTwo":
-			ch <- solutions.FibTwo(n)
-		case "FibThree":
-			ch <- solutions.FibThree(n, make(map[int]int))
-		}
-	}(solutionName, n, ch)
-
-	select {
-	case res := <-ch:
-		fmt.Printf("solutions.%s(%d) -> %d\n", solutionName, n, res)
-	case <-time.After(time.Duration(timeout) * time.Second):
-		fmt.Printf("solutions.%s(%d) -> out of time :(\n", solutionName, n)
-	}
+func now() string {
+	return time.Now().Format("2006-01-02 15:04:05.000000")
 }
